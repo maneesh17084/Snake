@@ -1,5 +1,7 @@
 # Snake — Normal & Mirror
 
+Live Demo : https://snake-ten-snowy.vercel.app
+
 Grid Snake for desktop and mobile browsers, with two modes:
 
 - **Normal Mode**: the snake moves the way you press or swipe.
