@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0f0a" />
+    <meta name="description" content="Classic grid Snake with a Mirror Mode that reverses your controls." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Snake · Normal &amp; Mirror</title>
+  </head>
+  <body>
+    <div class="app" id="app" data-mode="normal" data-phase="menu">
+      <div class="device">
+        <!-- Mode selection -->
+        <section class="menu" id="menu" aria-labelledby="menu-title">
+          <div class="brand">
+            <div class="logo" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i class="head"></i><b></b>
+            </div>
+            <h1 id="menu-title">Snake</h1>
+            <p class="tagline">Same board. Same speed. Pick which way your reflexes think.</p>
+          </div>
+
+          <div class="mode-cards">
+            <button class="mode-card" type="button" data-mode="normal" data-start="normal">
+              <span class="card-top">
+                <span class="card-title">Normal Mode</span>
+                <span class="card-best">Best <b data-best="normal">0</b></span>
+              </span>
+              <span class="card-desc">The snake goes where you point. Classic, fast, familiar.</span>
+              <span class="guide" aria-hidden="true">
+                <span class="chip"><kbd>↑</kbd><span>↑</span></span>
+                <span class="chip"><kbd>↓</kbd><span>↓</span></span>
+                <span class="chip"><kbd>←</kbd><span>←</span></span>
+                <span class="chip"><kbd>→</kbd><span>→</span></span>
+              </span>
+              <span class="card-cta">Play Normal</span>
+            </button>
+
+            <button class="mode-card" type="button" data-mode="mirror" data-start="mirror">
+              <span class="card-top">
+                <span class="card-title">Mirror Mode</span>
+                <span class="card-best">Best <b data-best="mirror">0</b></span>
+              </span>
+              <span class="card-desc">Every control is reversed. Press up to go down, left to go right.</span>
+              <span class="guide" aria-hidden="true">
+                <span class="chip"><kbd>↑</kbd><span>↓</span></span>
+                <span class="chip"><kbd>↓</kbd><span>↑</span></span>
+                <span class="chip"><kbd>←</kbd><span>→</span></span>
+                <span class="chip"><kbd>→</kbd><span>←</span></span>
+              </span>
+              <span class="card-cta">Play Mirror</span>
+            </button>
+          </div>
+
+          <p class="menu-foot">
+            <span class="desk-only">Arrows or WASD to steer · Esc to pause · M to mute</span>
+            <span class="touch-only">Swipe on the board to steer</span>
+          </p>
+        </section>
+
+        <!-- Game -->
+        <header class="hud" id="hud">
+          <div class="mode-badge">
+            <span class="mode-dot" aria-hidden="true"></span>
+            <span class="mode-text">
+              <span class="mode-name" id="mode-name">Normal</span>
+              <span class="mode-hint" id="mode-hint">Standard controls</span>
+            </span>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-label">Score</span>
+              <span class="stat-value" id="score">0000</span>
+            </div>
+            <div class="stat" id="best-stat">
+              <span class="stat-label">Best</span>
+              <span class="stat-value" id="best">0000</span>
+            </div>
+          </div>
+          <div class="hud-actions">
+            <button class="icon-btn" id="mute-btn" type="button" aria-pressed="false" aria-label="Mute sound">
+              <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" /><path d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" fill="none" /></svg>
+              <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" /><path d="M16.5 9.5l5 5m0-5l-5 5" fill="none" /></svg>
+            </button>
+            <button class="icon-btn" id="pause-btn" type="button" aria-label="Pause game">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="stage" id="stage">
+          <div class="screen" id="screen" tabindex="-1" aria-label="Game board">
+            <canvas id="board" aria-hidden="true"></canvas>
+            <div class="countdown" id="countdown" hidden>
+              <span class="countdown-mode" id="countdown-mode">Normal Mode</span>
+              <span class="countdown-num" id="countdown-num">3</span>
+              <span class="countdown-hint" id="countdown-hint">Standard controls</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="help">
+          <span class="desk-only">Arrows / WASD steer · Esc pause · M mute</span>
+          <span class="touch-only">Swipe on the board to steer</span>
+        </footer>
+
+        <!-- Pause -->
+        <section class="overlay" id="pause" hidden role="dialog" aria-modal="true" aria-labelledby="pause-title">
+          <div class="panel">
+            <h2 id="pause-title">Paused</h2>
+            <p class="panel-sub">Your round is frozen. Resume when you're ready.</p>
+            <div class="actions">
+              <button class="btn btn--primary" id="resume-btn" type="button">Resume</button>
+              <button class="btn" id="pause-home-btn" type="button">Back to Mode Selection</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Results -->
+        <section class="overlay" id="results" hidden role="dialog" aria-modal="true" aria-labelledby="results-title">
+          <div class="panel">
+            <p class="eyebrow" id="results-mode">Normal Mode</p>
+            <h2 id="results-title">Game Over</h2>
+            <p class="record" id="record-badge" hidden>★ New record</p>
+            <dl class="results-stats">
+              <div><dt>Score</dt><dd id="final-score">0</dd></div>
+              <div><dt id="final-best-label">Best · Normal</dt><dd id="final-best">0</dd></div>
+            </dl>
+            <div class="actions actions--modes">
+              <button class="btn btn--mode" type="button" data-mode="normal" data-start="normal">
+                Play Normal Mode<span class="again">Again</span>
+              </button>
+              <button class="btn btn--mode" type="button" data-mode="mirror" data-start="mirror">
+                Play Mirror Mode<span class="again">Again</span>
+              </button>
+            </div>
+            <button class="btn-link" id="results-home-btn" type="button">Mode selection</button>
+          </div>
+        </section>
+      </div>
+      <div class="sr-only" id="announcer" aria-live="polite"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
