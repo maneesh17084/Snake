@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0f0a" />
-    <meta name="description" content="Classic grid Snake with a Mirror Mode that reverses your controls." />
+    <meta name="description" content="Classic grid Snake with a Mirror Mode that reverses your controls and a Mouse Mode steered by your pointer." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <title>Snake · Normal &amp; Mirror</title>
+    <title>Snake · Normal, Mirror &amp; Mouse</title>
   </head>
   <body>
     <div class="app" id="app" data-mode="normal" data-phase="menu">
@@ -56,6 +56,15 @@
                 <span class="chip"><kbd>→</kbd><span>←</span></span>
               </span>
               <span class="card-cta">Play Mirror</span>
+            </button>
+
+            <button class="mode-card mode-card--wide" type="button" data-mode="mouse" data-start="mouse">
+              <span class="card-top">
+                <span class="card-title">Mouse Mode</span>
+                <span class="card-best">Best <b data-best="mouse">0</b></span>
+              </span>
+              <span class="card-desc">No keys needed. Move your pointer (or drag a finger) and the snake chases it.</span>
+              <span class="card-cta">Play Mouse</span>
             </button>
           </div>
 
@@ -139,6 +148,9 @@
               </button>
               <button class="btn btn--mode" type="button" data-mode="mirror" data-start="mirror">
                 Play Mirror Mode<span class="again">Again</span>
+              </button>
+              <button class="btn btn--mode" type="button" data-mode="mouse" data-start="mouse">
+                Play Mouse Mode<span class="again">Again</span>
               </button>
             </div>
             <button class="btn-link" id="results-home-btn" type="button">Mode selection</button>

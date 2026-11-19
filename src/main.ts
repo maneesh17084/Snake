@@ -1,5 +1,5 @@
 import './style.css';
-import { createGame, step, steer, stepInterval, type Dir, type GameState, type Mode } from './game';
+import { createGame, step, steer, steerToward, stepInterval, type Dir, type GameState, type Mode, type Point } from './game';
 import { createRenderer } from './renderer';
 import { createSound } from './sound';
 import { createBestStore } from './storage';
@@ -34,8 +34,12 @@ const pauseOverlay = $('pause');
 const results = $('results');
 const announcer = $('announcer');
 
-const MODE_LABEL: Record<Mode, string> = { normal: 'Normal', mirror: 'Mirror' };
-const MODE_HINT: Record<Mode, string> = { normal: 'Standard controls', mirror: 'Controls reversed' };
+const MODE_LABEL: Record<Mode, string> = { normal: 'Normal', mirror: 'Mirror', mouse: 'Mouse' };
+const MODE_HINT: Record<Mode, string> = {
+  normal: 'Standard controls',
+  mirror: 'Controls reversed',
+  mouse: 'Snake follows your pointer',
+};
 
 const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const best = createBestStore();
@@ -50,6 +54,8 @@ let acc = 0;
 let countdownTimer: number | undefined;
 let goTimer: number | undefined;
 let endTimer: number | undefined;
+/** Last pointer position in viewport coords (Mouse Mode steering). */
+let pointer: { x: number; y: number } | null = null;
 
 /* ---------- helpers ---------- */
 
@@ -217,7 +223,13 @@ function showResults(won: boolean, b: number, isRecord: boolean) {
   );
 }
 
+function mouseTarget(): Point | null {
+  return mode === 'mouse' && pointer ? renderer.cellAt(pointer.x, pointer.y) : null;
+}
+
 function tick(now: number) {
+  const target = mouseTarget();
+  if (target) steerToward(game, target);
   const food = game.food;
   const ev = step(game);
   if (ev === 'eat' || ev === 'win') {
@@ -237,7 +249,7 @@ function tick(now: number) {
 }
 
 function handleSteer(input: Dir) {
-  if (phase !== 'playing') return;
+  if (phase !== 'playing' || mode === 'mouse') return;
   steer(game, input, mode);
 }
 
@@ -256,7 +268,7 @@ function frame(now: number) {
       iv = stepInterval(game.eaten);
     }
   }
-  renderer.draw(game, now);
+  renderer.draw(game, now, phase === 'menu' ? null : mouseTarget());
   requestAnimationFrame(frame);
 }
 
@@ -323,6 +335,13 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// Mouse Mode: remember where the pointer is; the snake turns toward it each step.
+const trackPointer = (e: PointerEvent) => {
+  if (mode === 'mouse') pointer = { x: e.clientX, y: e.clientY };
+};
+window.addEventListener('pointermove', trackPointer);
+window.addEventListener('pointerdown', trackPointer);
+
 // Swipes: fire as soon as the finger travels far enough; chain within one touch.
 let swipeStart: { x: number; y: number; id: number } | null = null;
 stage.addEventListener('pointerdown', (e) => {
@@ -331,7 +350,7 @@ stage.addEventListener('pointerdown', (e) => {
   swipeStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
 });
 stage.addEventListener('pointermove', (e) => {
-  if (!swipeStart || e.pointerId !== swipeStart.id) return;
+  if (!swipeStart || e.pointerId !== swipeStart.id || mode === 'mouse') return;
   const dx = e.clientX - swipeStart.x;
   const dy = e.clientY - swipeStart.y;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_PX) return;

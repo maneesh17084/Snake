@@ -1,7 +1,7 @@
 // Pure game logic — no DOM. Shared by both modes; only input mapping differs.
 
 export type Dir = 'up' | 'down' | 'left' | 'right';
-export type Mode = 'normal' | 'mirror';
+export type Mode = 'normal' | 'mirror' | 'mouse';
 export type Status = 'running' | 'lost' | 'won';
 export type StepEvent = 'move' | 'eat' | 'collide' | 'win' | 'idle';
 
@@ -48,7 +48,7 @@ export const VECTORS: Record<Dir, Point> = {
   right: { x: 1, y: 0 },
 };
 
-/** Mirror Mode reverses both axes. */
+/** Mirror Mode reverses both axes; Normal and Mouse pass inputs through. */
 export function mapInput(input: Dir, mode: Mode): Dir {
   return mode === 'mirror' ? OPPOSITE[input] : input;
 }
@@ -158,4 +158,36 @@ export function step(state: GameState, rng: Rng = Math.random): StepEvent {
     return 'win';
   }
   return 'eat';
+}
+
+/**
+ * Mouse Mode: pick the turn that brings the head closer to `target`.
+ * Prefers the axis with the larger gap, never reverses, and when the target
+ * is directly behind, turns toward the side of the board with more room.
+ * Returns null when the head is already on the target (keep going straight).
+ */
+export function aimToward(state: GameState, target: Point): Dir | null {
+  const head = state.snake[0];
+  const dx = target.x - head.x;
+  const dy = target.y - head.y;
+  if (dx === 0 && dy === 0) return null;
+
+  const h: Dir | null = dx === 0 ? null : dx > 0 ? 'right' : 'left';
+  const v: Dir | null = dy === 0 ? null : dy > 0 ? 'down' : 'up';
+  const ordered = Math.abs(dx) >= Math.abs(dy) ? [h, v] : [v, h];
+  const back = OPPOSITE[state.dir];
+  const pick = ordered.find((d): d is Dir => d !== null && d !== back);
+  if (pick) return pick;
+
+  // Target is straight behind: swing out toward the roomier side.
+  if (state.dir === 'left' || state.dir === 'right') return head.y > (state.rows - 1) / 2 ? 'up' : 'down';
+  return head.x > (state.cols - 1) / 2 ? 'left' : 'right';
+}
+
+/** Replace any pending turns with the single best turn toward `target`. */
+export function steerToward(state: GameState, target: Point): void {
+  if (state.status !== 'running') return;
+  state.queue = [];
+  const d = aimToward(state, target);
+  if (d) requestTurn(state, d);
 }

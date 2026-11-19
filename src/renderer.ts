@@ -131,6 +131,26 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
     for (const [ex, ey] of eyes) ctx.fillRect(Math.round(hx + ex - e / 2), Math.round(hy + ey - e / 2), e, e);
   }
 
+  /** Mouse Mode: a corner-bracket reticle on the cell the snake is chasing. */
+  function drawTarget(t: Point) {
+    const x = cx(t.x);
+    const y = cy(t.y);
+    const len = Math.max(3, Math.round(cell * 0.3));
+    const w = Math.max(1, Math.round(cell * 0.1));
+    ctx.fillStyle = theme.accent;
+    ctx.globalAlpha = 0.85;
+    for (const [px, py, sx, sy] of [
+      [x, y, 1, 1],
+      [x + cell, y, -1, 1],
+      [x, y + cell, 1, -1],
+      [x + cell, y + cell, -1, -1],
+    ]) {
+      ctx.fillRect(sx > 0 ? px : px - len, sy > 0 ? py : py - w, len, w);
+      ctx.fillRect(sx > 0 ? px : px - w, sy > 0 ? py : py - len, w, len);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function drawEffects(now: number) {
     const reduced = reducedMotion();
     effects = effects.filter((fx) => now - fx.start < (fx.kind === 'pickup' ? PICKUP_MS : CRASH_MS));
@@ -174,18 +194,27 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
     reset() {
       effects = [];
     },
+    /** Grid cell under a viewport point, clamped to the board. */
+    cellAt(clientX: number, clientY: number): Point {
+      const r = canvas.getBoundingClientRect();
+      const px = (clientX - r.left) * (canvas.width / Math.max(1, r.width));
+      const py = (clientY - r.top) * (canvas.height / Math.max(1, r.height));
+      const clamp = (v: number, n: number) => Math.min(n - 1, Math.max(0, v));
+      return { x: clamp(Math.floor((px - ox) / cell), cols), y: clamp(Math.floor((py - oy) / cell), rows) };
+    },
     pickup(at: Point, now: number) {
       effects.push({ kind: 'pickup', at: { ...at }, start: now });
     },
     crash(at: Point, now: number) {
       effects.push({ kind: 'crash', at: { ...at }, start: now });
     },
-    draw(state: GameState, now: number) {
+    draw(state: GameState, now: number, target: Point | null = null) {
       const [sx, sy] = shakeOffset(now);
       ctx.save();
       ctx.translate(Math.round(sx), Math.round(sy));
       drawGrid();
       if (state.food) drawFood(state.food, now);
+      if (target && state.status === 'running') drawTarget(target);
       drawSnake(state, now);
       drawEffects(now);
       ctx.restore();

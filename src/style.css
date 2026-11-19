@@ -24,6 +24,10 @@
   --accent: #c2410c;
   --accent-ui: #ff9558;
 }
+[data-mode='mouse'] {
+  --accent: #7c2d9e;
+  --accent-ui: #d29bff;
+}
 
 *,
 *::before,
@@ -723,6 +727,19 @@ h1 {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Mouse Mode spans the full row under the two key-driven modes. */
+.mode-card--wide {
+  grid-column: 1 / -1;
+}
+.mode-card--wide .card-desc {
+  min-height: 0;
+}
+
+/* Precise aiming while playing Mouse Mode. */
+.app[data-mode='mouse'] .stage {
+  cursor: crosshair;
 }
 
 /* Mirror gets a glyph next to its label so the mode is never ambiguous. */

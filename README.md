@@ -1,13 +1,14 @@
-# Snake — Normal & Mirror
+# Snake — Normal, Mirror & Mouse
 
 Live Demo : https://snake-ten-snowy.vercel.app
 
-Grid Snake for desktop and mobile browsers, with two modes:
+Grid Snake for desktop and mobile browsers, with three modes:
 
 - **Normal Mode**: the snake moves the way you press or swipe.
 - **Mirror Mode**: both axes are reversed (Up moves down, Left moves right).
+- **Mouse Mode**: no keys. The snake turns toward your mouse pointer (or your finger on touch screens) one step at a time. It never reverses into itself, so if you point straight behind it, it swings around.
 
-The two modes share the same board, scoring and speed curve. Each mode keeps its own personal best in `localStorage`, and the game still works if storage is blocked.
+All modes share the same board, scoring and speed curve. Each mode keeps its own personal best in `localStorage`, and the game still works if storage is blocked.
 
 ## Controls
 | Input | Normal | Mirror |

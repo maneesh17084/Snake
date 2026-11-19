@@ -5,6 +5,8 @@ import {
   placeFood,
   step,
   steer,
+  steerToward,
+  aimToward,
   stepInterval,
   SPEED,
   type Dir,
@@ -201,5 +203,41 @@ describe('speed', () => {
     expect(stepInterval(1)).toBeLessThan(stepInterval(0));
     expect(stepInterval(1000)).toBe(SPEED.minMs);
     for (let i = 1; i < 60; i++) expect(stepInterval(i)).toBeLessThanOrEqual(stepInterval(i - 1));
+  });
+});
+
+describe('mouse mode aiming', () => {
+  // Default snake: head at (3,5) moving right on a 10x10 board.
+  const make = () => createGame({ cols: 10, rows: 10, food: null });
+
+  it('keeps going straight when the target is ahead or under the head', () => {
+    const g = make();
+    expect(aimToward(g, { x: 8, y: 5 })).toBe('right');
+    expect(aimToward(g, g.snake[0])).toBeNull();
+  });
+
+  it('turns along the axis with the larger gap', () => {
+    const g = make();
+    expect(aimToward(g, { x: 5, y: 0 })).toBe('up');
+    expect(aimToward(g, { x: 9, y: 7 })).toBe('right');
+  });
+
+  it('never reverses; uses the other axis instead', () => {
+    const g = make();
+    expect(aimToward(g, { x: 0, y: 4 })).toBe('up');
+  });
+
+  it('swings toward the roomier side when the target is directly behind', () => {
+    const g = createGame({ cols: 10, rows: 10, food: null, snake: [{ x: 5, y: 2 }, { x: 4, y: 2 }, { x: 3, y: 2 }] });
+    expect(aimToward(g, { x: 0, y: 2 })).toBe('down');
+  });
+
+  it('steerToward replaces queued turns and moves the head toward the target', () => {
+    const g = make();
+    steer(g, 'down', 'normal');
+    steerToward(g, { x: 3, y: 0 });
+    expect(g.queue).toEqual(['up']);
+    step(g, fixedRng);
+    expect(g.snake[0]).toEqual({ x: 3, y: 4 });
   });
 });

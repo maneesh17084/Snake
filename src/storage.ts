@@ -24,13 +24,14 @@ function safeSet(key: string, value: string): void {
 const clean = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
 
 export function createBestStore() {
-  const bests: Bests = { normal: 0, mirror: 0 };
+  const bests: Bests = { normal: 0, mirror: 0, mouse: 0 };
   const raw = safeGet(BEST_KEY);
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as Partial<Bests>;
       bests.normal = clean(parsed.normal);
       bests.mirror = clean(parsed.mirror);
+      bests.mouse = clean(parsed.mouse);
     } catch {
       /* corrupt value — start fresh */
     }
