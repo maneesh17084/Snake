@@ -1,9 +1,12 @@
 import type { GameState, Point } from './game';
 
 export interface Theme {
-  lcd: string;
-  ink: string;
-  accent: string;
+  board: string;
+  snake: string;
+  head: string;
+  fruit: string;
+  fruitCore: string;
+  target: string;
 }
 
 interface Effect {
@@ -23,7 +26,14 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
   let oy = 0;
   let cols = 1;
   let rows = 1;
-  let theme: Theme = { lcd: '#c4cf9f', ink: '#1c2513', accent: '#2b62b0' };
+  let theme: Theme = {
+    board: '#c3cf9c',
+    snake: '#1b2412',
+    head: '#2459a8',
+    fruit: '#1b2412',
+    fruitCore: '#2459a8',
+    target: '#2459a8',
+  };
   let effects: Effect[] = [];
 
   function layout() {
@@ -48,11 +58,11 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
   const cy = (y: number) => oy + y * cell;
 
   function drawGrid() {
-    ctx.fillStyle = theme.lcd;
+    ctx.fillStyle = theme.board;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     // Faint "unlit pixel" cells give the LCD texture.
     ctx.globalAlpha = 0.07;
-    ctx.fillStyle = theme.ink;
+    ctx.fillStyle = theme.snake;
     const g = Math.max(1, Math.round(cell * 0.12));
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) ctx.fillRect(cx(x) + g, cy(y) + g, cell - g * 2, cell - g * 2);
     ctx.globalAlpha = 1;
@@ -63,7 +73,7 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
     const mx = cx(f.x) + cell / 2;
     const my = cy(f.y) + cell / 2;
     const r = cell * 0.46 * pulse;
-    ctx.fillStyle = theme.ink;
+    ctx.fillStyle = theme.fruit;
     ctx.beginPath();
     ctx.moveTo(mx, my - r);
     ctx.lineTo(mx + r, my);
@@ -72,14 +82,14 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
     ctx.closePath();
     ctx.fill();
     const ir = r * 0.45;
-    ctx.fillStyle = theme.accent;
+    ctx.fillStyle = theme.fruitCore;
     ctx.fillRect(mx - ir / 2, my - ir / 2, ir, ir);
   }
 
   function drawSnake(state: GameState, now: number) {
     const s = state.snake;
     const g = Math.max(1, Math.round(cell * 0.1));
-    ctx.fillStyle = theme.ink;
+    ctx.fillStyle = theme.snake;
     for (let i = s.length - 1; i >= 1; i--) {
       const p = s[i];
       ctx.fillRect(cx(p.x) + g, cy(p.y) + g, cell - g * 2, cell - g * 2);
@@ -97,15 +107,15 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
     const hx = cx(h.x);
     const hy = cy(h.y);
     const hg = Math.max(0, g - 1);
-    ctx.fillStyle = blinkOff ? theme.ink : theme.accent;
+    ctx.fillStyle = blinkOff ? theme.snake : theme.head;
     ctx.fillRect(hx + hg, hy + hg, cell - hg * 2, cell - hg * 2);
-    ctx.strokeStyle = theme.ink;
+    ctx.strokeStyle = theme.snake;
     ctx.lineWidth = Math.max(1, Math.round(cell * 0.08));
     ctx.strokeRect(hx + hg + ctx.lineWidth / 2, hy + hg + ctx.lineWidth / 2, cell - hg * 2 - ctx.lineWidth, cell - hg * 2 - ctx.lineWidth);
 
     if (crashed) {
       // An X marks the collision.
-      ctx.strokeStyle = theme.lcd;
+      ctx.strokeStyle = theme.board;
       ctx.lineWidth = Math.max(2, cell * 0.14);
       const m = cell * 0.28;
       ctx.beginPath();
@@ -127,7 +137,7 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
       : state.dir === 'left' ? [[cell - near, side1], [cell - near, side2]]
       : state.dir === 'up' ? [[side1, cell - near], [side2, cell - near]]
       : [[side1, near], [side2, near]];
-    ctx.fillStyle = theme.lcd;
+    ctx.fillStyle = theme.board;
     for (const [ex, ey] of eyes) ctx.fillRect(Math.round(hx + ex - e / 2), Math.round(hy + ey - e / 2), e, e);
   }
 
@@ -137,7 +147,7 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
     const y = cy(t.y);
     const len = Math.max(3, Math.round(cell * 0.3));
     const w = Math.max(1, Math.round(cell * 0.1));
-    ctx.fillStyle = theme.accent;
+    ctx.fillStyle = theme.target;
     ctx.globalAlpha = 0.85;
     for (const [px, py, sx, sy] of [
       [x, y, 1, 1],
@@ -159,7 +169,7 @@ export function createRenderer(canvas: HTMLCanvasElement, container: HTMLElement
       const t = (now - fx.start) / PICKUP_MS;
       const mx = cx(fx.at.x) + cell / 2;
       const my = cy(fx.at.y) + cell / 2;
-      ctx.strokeStyle = theme.accent;
+      ctx.strokeStyle = theme.head;
       ctx.lineWidth = Math.max(1, cell * 0.12);
       ctx.globalAlpha = 1 - t;
       if (reduced) {

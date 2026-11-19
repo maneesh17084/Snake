@@ -10,6 +10,9 @@ Grid Snake for desktop and mobile browsers, with three modes:
 
 All modes share the same board, scoring and speed curve. Each mode keeps its own personal best in `localStorage`, and the game still works if storage is blocked.
 
+## Skins
+Each mode has its own collection of colour sets: one default plus six you unlock by reaching a best score of **50, 75, 100, 150, 200 and 300** in that mode. A skin colours the board, snake body, head and fruit. Mouse Mode skins also colour the target marker and the cursor. Open **Skins & Colours** from the menu (or **Skins** on the results screen) to pick any unlocked set for each mode. Your choice is saved.
+
 ## Controls
 | Input | Normal | Mirror |
 |---|---|---|

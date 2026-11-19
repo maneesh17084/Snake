@@ -2,6 +2,7 @@ import type { Mode } from './game';
 
 const BEST_KEY = 'mirror-snake.best.v1';
 const MUTE_KEY = 'mirror-snake.muted.v1';
+const SKIN_KEY = 'mirror-snake.skins.v1';
 
 type Bests = Record<Mode, number>;
 
@@ -55,3 +56,24 @@ export const mutePref = {
   get: () => safeGet(MUTE_KEY) === '1',
   set: (muted: boolean) => safeSet(MUTE_KEY, muted ? '1' : '0'),
 };
+
+/** Which skin the player picked for each mode (ids only; unlocks come from bests). */
+export function createSkinChoiceStore() {
+  let choices: Partial<Record<Mode, string>> = {};
+  const raw = safeGet(SKIN_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') choices = parsed;
+    } catch {
+      /* corrupt value — use defaults */
+    }
+  }
+  return {
+    get: (mode: Mode): string | undefined => (typeof choices[mode] === 'string' ? choices[mode] : undefined),
+    set(mode: Mode, id: string) {
+      choices[mode] = id;
+      safeSet(SKIN_KEY, JSON.stringify(choices));
+    },
+  };
+}

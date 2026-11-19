@@ -2,7 +2,8 @@ import './style.css';
 import { createGame, step, steer, steerToward, stepInterval, type Dir, type GameState, type Mode, type Point } from './game';
 import { createRenderer } from './renderer';
 import { createSound } from './sound';
-import { createBestStore } from './storage';
+import { createBestStore, createSkinChoiceStore } from './storage';
+import { SKINS, isUnlocked, newlyUnlocked, nextUnlock, resolveSkin, type Skin } from './skins';
 
 const COLS = 18;
 const ROWS = 18;
@@ -33,6 +34,11 @@ const menu = $('menu');
 const pauseOverlay = $('pause');
 const results = $('results');
 const announcer = $('announcer');
+const skinsOverlay = $('skins');
+const skinGrid = $('skin-grid');
+const skinProgress = $('skin-progress');
+const skinsPanel = $('skins-panel');
+const unlockNote = $('unlock-note');
 
 const MODE_LABEL: Record<Mode, string> = { normal: 'Normal', mirror: 'Mirror', mouse: 'Mouse' };
 const MODE_HINT: Record<Mode, string> = {
@@ -43,6 +49,7 @@ const MODE_HINT: Record<Mode, string> = {
 
 const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const best = createBestStore();
+const skinChoice = createSkinChoiceStore();
 const sound = createSound();
 const renderer = createRenderer(canvas, screen, () => reducedQuery.matches);
 renderer.setGrid(COLS, ROWS);
@@ -54,6 +61,8 @@ let acc = 0;
 let countdownTimer: number | undefined;
 let goTimer: number | undefined;
 let endTimer: number | undefined;
+let skinsTab: Mode = 'normal';
+let skinsReturn: 'menu' | 'results' = 'menu';
 /** Last pointer position in viewport coords (Mouse Mode steering). */
 let pointer: { x: number; y: number } | null = null;
 
@@ -73,13 +82,27 @@ function setPhase(p: Phase) {
   pauseBtn.disabled = !(p === 'playing' || p === 'countdown');
 }
 
-function readTheme() {
-  const cs = getComputedStyle(app);
-  return {
-    lcd: cs.getPropertyValue('--lcd').trim(),
-    ink: cs.getPropertyValue('--ink').trim(),
-    accent: cs.getPropertyValue('--accent').trim(),
-  };
+function currentSkin(m: Mode): Skin {
+  return resolveSkin(m, skinChoice.get(m), best.get(m));
+}
+
+/** A crosshair cursor drawn in the skin's target colour. */
+function cursorFor(color: string) {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${color}' stroke-width='2.5'>` +
+    `<circle cx='12' cy='12' r='6.5' stroke='#000' stroke-opacity='.45' stroke-width='4.5'/>` +
+    `<circle cx='12' cy='12' r='6.5'/><path d='M12 1v6M12 17v6M1 12h6M17 12h6'/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, crosshair`;
+}
+
+function applySkin() {
+  const skin = currentSkin(mode);
+  renderer.setTheme(skin);
+  // The countdown overlay sits on the board, so it follows the skin too.
+  screen.style.setProperty('--lcd', skin.board);
+  screen.style.setProperty('--ink', skin.snake);
+  screen.style.setProperty('--accent', skin.head);
+  stage.style.cursor = mode === 'mouse' ? cursorFor(skin.target) : '';
 }
 
 function setMode(m: Mode) {
@@ -87,7 +110,7 @@ function setMode(m: Mode) {
   app.dataset.mode = m;
   modeName.textContent = MODE_LABEL[m];
   modeHint.textContent = MODE_HINT[m];
-  renderer.setTheme(readTheme());
+  applySkin();
 }
 
 function updateHud() {
@@ -103,7 +126,7 @@ function refreshMenuBests() {
   });
 }
 
-const overlays = [menu, pauseOverlay, results];
+const overlays = [menu, pauseOverlay, results, skinsOverlay];
 
 function showOverlay(el: HTMLElement, focusSel?: string) {
   overlays.forEach((o) => (o.hidden = o !== el));
@@ -200,11 +223,13 @@ function resume() {
 
 function endRound(won: boolean) {
   setPhase('ending');
+  const before = best.get(mode);
   const { best: b, isRecord } = best.submit(mode, game.score);
-  endTimer = window.setTimeout(() => showResults(won, b, isRecord), won ? 900 : 800);
+  const unlocked = newlyUnlocked(mode, before, b);
+  endTimer = window.setTimeout(() => showResults(won, b, isRecord, unlocked), won ? 900 : 800);
 }
 
-function showResults(won: boolean, b: number, isRecord: boolean) {
+function showResults(won: boolean, b: number, isRecord: boolean, unlocked: Skin[] = []) {
   setPhase('results');
   $('results-title').textContent = won ? 'Board Cleared!' : 'Game Over';
   $('results-mode').textContent = `${MODE_LABEL[mode]} Mode`;
@@ -212,6 +237,14 @@ function showResults(won: boolean, b: number, isRecord: boolean) {
   $('final-best-label').textContent = `Best · ${MODE_LABEL[mode]}`;
   $('final-best').textContent = String(b);
   $('record-badge').hidden = !isRecord;
+  unlockNote.hidden = unlocked.length === 0;
+  unlockNote.textContent = unlocked.length
+    ? `New skin${unlocked.length > 1 ? 's' : ''} unlocked: ${unlocked.map((s) => s.name).join(', ')}`
+    : '';
+  const next = nextUnlock(mode, b);
+  $('next-unlock').textContent = next
+    ? `Next skin at ${next.unlockAt} in ${MODE_LABEL[mode]} Mode`
+    : `All ${MODE_LABEL[mode]} skins unlocked`;
   results.dataset.mode = mode;
   results.querySelectorAll<HTMLElement>('[data-start]').forEach((btn) => {
     btn.classList.toggle('is-last', btn.dataset.start === mode);
@@ -219,13 +252,95 @@ function showResults(won: boolean, b: number, isRecord: boolean) {
   updateHud();
   showOverlay(results, `[data-start="${mode}"]`);
   announce(
-    `${won ? 'Board cleared' : 'Game over'}. Score ${game.score}. ${MODE_LABEL[mode]} best ${b}.${isRecord ? ' New record!' : ''}`,
+    `${won ? 'Board cleared' : 'Game over'}. Score ${game.score}. ${MODE_LABEL[mode]} best ${b}.${isRecord ? ' New record!' : ''}` +
+      (unlocked.length ? ` ${unlockNote.textContent}.` : ''),
   );
 }
 
 function mouseTarget(): Point | null {
   return mode === 'mouse' && pointer ? renderer.cellAt(pointer.x, pointer.y) : null;
 }
+
+/* ---------- skins ---------- */
+
+function renderSkins() {
+  const m = skinsTab;
+  const b = best.get(m);
+  const equipped = currentSkin(m);
+  skinsPanel.dataset.mode = m;
+  skinsOverlay.querySelectorAll<HTMLButtonElement>('[data-skin-tab]').forEach((t) => {
+    t.setAttribute('aria-pressed', String(t.dataset.skinTab === m));
+  });
+  const count = SKINS[m].filter((s) => isUnlocked(s, b)).length;
+  const next = nextUnlock(m, b);
+  skinProgress.textContent =
+    `${MODE_LABEL[m]} best ${b} · ${count}/${SKINS[m].length} unlocked` + (next ? ` · next at ${next.unlockAt}` : '');
+
+  skinGrid.replaceChildren(
+    ...SKINS[m].map((skin) => {
+      const open = isUnlocked(skin, b);
+      const on = skin.id === equipped.id;
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'skin-tile';
+      tile.dataset.skin = skin.id;
+      tile.classList.toggle('is-locked', !open);
+      tile.classList.toggle('is-on', on);
+      tile.setAttribute('aria-pressed', String(on));
+      if (!open) tile.setAttribute('aria-disabled', 'true');
+      const status = on ? 'Equipped' : open ? 'Use' : `Score ${skin.unlockAt}`;
+      tile.setAttribute(
+        'aria-label',
+        `${skin.name}. ${open ? status : `Locked. Reach ${skin.unlockAt} in ${MODE_LABEL[m]} Mode`}`,
+      );
+      tile.innerHTML = `
+        <span class="skin-preview" aria-hidden="true"
+          style="--b:${skin.board};--s:${skin.snake};--h:${skin.head};--f:${skin.fruit};--c:${skin.fruitCore};--t:${skin.target}">
+          <i></i><i></i><i></i><i class="h"></i><i class="gap"></i><b></b>
+        </span>
+        <span class="skin-name">${skin.name}</span>
+        <span class="skin-status">${open ? '' : '🔒 '}${status}</span>`;
+      return tile;
+    }),
+  );
+}
+
+function openSkins(from: 'menu' | 'results') {
+  skinsReturn = from;
+  skinsTab = mode;
+  renderSkins();
+  showOverlay(skinsOverlay, '.skin-tile.is-on');
+}
+
+function closeSkins() {
+  if (skinsReturn === 'results') {
+    showOverlay(results, `[data-start="${mode}"]`);
+  } else {
+    refreshMenuBests();
+    showOverlay(menu, `[data-start="${mode}"]`);
+  }
+}
+
+skinGrid.addEventListener('click', (e) => {
+  const tile = (e.target as HTMLElement).closest<HTMLButtonElement>('.skin-tile');
+  if (!tile || tile.getAttribute('aria-disabled') === 'true') return;
+  const skin = SKINS[skinsTab].find((s) => s.id === tile.dataset.skin);
+  if (!skin) return;
+  skinChoice.set(skinsTab, skin.id);
+  if (skinsTab === mode) applySkin();
+  renderSkins();
+  skinGrid.querySelector<HTMLElement>(`[data-skin="${skin.id}"]`)?.focus();
+  announce(`${skin.name} equipped for ${MODE_LABEL[skinsTab]} Mode`);
+});
+skinsOverlay.querySelectorAll<HTMLButtonElement>('[data-skin-tab]').forEach((t) =>
+  t.addEventListener('click', () => {
+    skinsTab = t.dataset.skinTab as Mode;
+    renderSkins();
+  }),
+);
+$('skins-back-btn').addEventListener('click', closeSkins);
+$('menu-skins-btn').addEventListener('click', () => openSkins('menu'));
+$('results-skins-btn').addEventListener('click', () => openSkins('results'));
 
 function tick(now: number) {
   const target = mouseTarget();
@@ -319,6 +434,12 @@ window.addEventListener('keydown', (e) => {
       e.preventDefault();
       pause();
     }
+    return;
+  }
+
+  if (!skinsOverlay.hidden && key === 'Escape') {
+    e.preventDefault();
+    closeSkins();
     return;
   }
 

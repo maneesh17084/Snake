@@ -729,6 +729,160 @@ h1 {
   }
 }
 
+/* ---------- skins ---------- */
+
+.skins-btn {
+  width: 100%;
+  color: var(--text);
+}
+
+.unlock {
+  margin: 10px auto 0;
+  padding: 6px 12px;
+  max-width: 320px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-ui) 22%, var(--shell));
+  border: 1px solid var(--accent-ui);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.next-unlock {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.results-links {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.panel--skins {
+  width: min(100%, 520px);
+}
+/* Opened from the menu the board is hidden, so the panel sets the height. */
+[data-phase='menu'] #skins {
+  position: static;
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-phase='menu'] .panel--skins {
+  width: 100%;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  padding: 8px 4px;
+}
+.skin-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--shell);
+  border: 1px solid var(--line);
+}
+.skin-tab {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.skin-tab[aria-pressed='true'] {
+  background: var(--accent-ui);
+  color: #0b0f0a;
+}
+.skin-progress {
+  margin: 12px 0 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.skin-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: var(--shell);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    transform 0.12s ease;
+}
+.skin-tile:hover {
+  border-color: var(--muted);
+  transform: translateY(-1px);
+}
+.skin-tile.is-on {
+  border-color: var(--accent-ui);
+  box-shadow: 0 0 0 1px var(--accent-ui);
+}
+.skin-tile.is-locked {
+  cursor: not-allowed;
+  transform: none;
+}
+.skin-tile.is-locked .skin-preview {
+  filter: grayscale(1) brightness(0.55);
+}
+.skin-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.skin-status {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.skin-tile.is-on .skin-status {
+  color: var(--accent-ui);
+}
+
+/* Mini board: three body cells, a head, a gap, then the fruit. */
+.skin-preview {
+  display: grid;
+  grid-template-columns: repeat(6, 12px);
+  gap: 2px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--b);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--s) 25%, transparent);
+}
+.skin-preview i,
+.skin-preview b {
+  width: 12px;
+  height: 12px;
+  background: var(--s);
+}
+.skin-preview .h {
+  background: var(--h);
+  box-shadow: inset 0 0 0 2px var(--s);
+}
+.skin-preview .gap {
+  background: none;
+}
+.skin-preview b {
+  background: var(--c);
+  transform: rotate(45deg) scale(0.75);
+  box-shadow: 0 0 0 2px var(--f);
+}
+
 /* Mouse Mode spans the full row under the two key-driven modes. */
 .mode-card--wide {
   grid-column: 1 / -1;

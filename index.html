@@ -68,6 +68,10 @@
             </button>
           </div>
 
+          <button class="btn skins-btn" id="menu-skins-btn" type="button">
+            <span aria-hidden="true">🎨</span> Skins &amp; Colours
+          </button>
+
           <p class="menu-foot">
             <span class="desk-only">Arrows or WASD to steer · Esc to pause · M to mute</span>
             <span class="touch-only">Swipe on the board to steer</span>
@@ -138,6 +142,7 @@
             <p class="eyebrow" id="results-mode">Normal Mode</p>
             <h2 id="results-title">Game Over</h2>
             <p class="record" id="record-badge" hidden>★ New record</p>
+            <p class="unlock" id="unlock-note" hidden></p>
             <dl class="results-stats">
               <div><dt>Score</dt><dd id="final-score">0</dd></div>
               <div><dt id="final-best-label">Best · Normal</dt><dd id="final-best">0</dd></div>
@@ -153,7 +158,27 @@
                 Play Mouse Mode<span class="again">Again</span>
               </button>
             </div>
-            <button class="btn-link" id="results-home-btn" type="button">Mode selection</button>
+            <p class="next-unlock" id="next-unlock"></p>
+            <div class="results-links">
+              <button class="btn-link" id="results-skins-btn" type="button">Skins</button>
+              <button class="btn-link" id="results-home-btn" type="button">Mode selection</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Skins -->
+        <section class="overlay" id="skins" hidden role="dialog" aria-modal="true" aria-labelledby="skins-title">
+          <div class="panel panel--skins" id="skins-panel" data-mode="normal">
+            <h2 id="skins-title">Skins</h2>
+            <p class="panel-sub">Hit score targets in each mode to unlock its colour sets.</p>
+            <div class="skin-tabs" role="group" aria-label="Mode">
+              <button class="skin-tab" type="button" data-mode="normal" data-skin-tab="normal">Normal</button>
+              <button class="skin-tab" type="button" data-mode="mirror" data-skin-tab="mirror">Mirror</button>
+              <button class="skin-tab" type="button" data-mode="mouse" data-skin-tab="mouse">Mouse</button>
+            </div>
+            <p class="skin-progress" id="skin-progress"></p>
+            <div class="skin-grid" id="skin-grid"></div>
+            <button class="btn btn--primary" id="skins-back-btn" type="button">Done</button>
           </div>
         </section>
       </div>
